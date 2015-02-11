@@ -44,11 +44,19 @@ function Olp.parse(data)
                        originatorAddress:u4
                        timeToLive:u1 hopCount:u1 sequnceCounter:u2]], buf, message)
       message.offset = buf:seek()
-      buf:seek('cur', message.size - 12)
 
+      if message.offset + message.size - 12 > data:len() then
+         error("Invalid message size")
+      end
+
+      buf:seek('cur', message.size - 12)
       table.insert(packet.messages, message)
    end
 
+   for key, message in pairs(packet.messages) do
+      buf:seek('set', message.offset)
+      message.data = buf:read(message.size - 12)
+   end
    return packet
 end
 
