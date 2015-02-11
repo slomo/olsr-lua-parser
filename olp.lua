@@ -25,10 +25,24 @@ function Message:new(o)
    return o
 end
 
-local Olp = {}
+local Olp = {
+   inet_proto = 6;
+   address_length = 16;
+   message_header_size = 24;
+}
 
-function Olp.parse(data)
 
+function Olp:setProto(inet_proto)
+   self.inet_proto = inet_proto or 6
+   if self.inet_proto == 6 then
+      self.address_length = 16
+   else
+      self.address_length = 4
+   end
+   self.message_header_size = self.address_length + 8
+end
+
+function Olp:parse(data)
    local buf = vstruct.cursor(data)
    local packet = Packet:new()
 
@@ -41,21 +55,21 @@ function Olp.parse(data)
    while(buf:seek() < data:len()) do
       local message = {}
       vstruct.read([[> type:u1 vtime:u1 size:u2
-                       originatorAddress:u4
+                       originatorAddress:u]] .. self.address_length .. [[
                        timeToLive:u1 hopCount:u1 sequnceCounter:u2]], buf, message)
       message.offset = buf:seek()
 
-      if message.offset + message.size - 12 > data:len() then
+      if message.offset + message.size - self.message_header_size > data:len() then
          error("Invalid message size")
       end
 
-      buf:seek('cur', message.size - 12)
+      buf:seek('cur', message.size - self.message_header_size)
       table.insert(packet.messages, message)
    end
 
    for key, message in pairs(packet.messages) do
       buf:seek('set', message.offset)
-      message.data = buf:read(message.size - 12)
+      message.data = buf:read(message.size - self.message_header_size)
    end
    return packet
 end
