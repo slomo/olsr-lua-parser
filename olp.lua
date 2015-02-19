@@ -29,6 +29,7 @@ local Olp = {
    inet_proto = 6;
    address_length = 16;
    message_header_size = 24;
+   minimal_packet_length = 16;
 }
 
 
@@ -42,6 +43,12 @@ function Olp:setProto(inet_proto)
    self.message_header_size = self.address_length + 8
 end
 
+
+--- Parse an olsr packet and the basic message structures.
+-- Takes the raw data string of an olsr udp package and parse the package and message header. The
+-- packet length is validate against the sum of the message sizes and the length of the raw data
+-- string given.
+-- @param data Olsr upd packet content
 function Olp:parse(data)
    local buf = vstruct.cursor(data)
    local packet = Packet:new()
@@ -49,7 +56,11 @@ function Olp:parse(data)
    vstruct.read("> length:u2 sequenceNumber:u2 ", buf, packet)
 
    if data:len() ~= packet.length then
-      error("Invalid packet size")
+      error("Packet length must match udp content length")
+   end
+
+   if packet.length < self.minimal_packet_length then
+      error("Packet must be bigger than minimal_packet_length")
    end
 
    while(buf:seek() < data:len()) do
@@ -60,11 +71,15 @@ function Olp:parse(data)
       message.offset = buf:seek()
 
       if message.offset + message.size - self.message_header_size > data:len() then
-         error("Invalid message size")
+         error("Message length should not exeede packet boundary")
       end
 
       buf:seek('cur', message.size - self.message_header_size)
       table.insert(packet.messages, message)
+   end
+
+   if #packet.messages == 0 then
+      error ("Packet should contain contain at least one message")
    end
 
    for key, message in pairs(packet.messages) do
@@ -73,5 +88,19 @@ function Olp:parse(data)
    end
    return packet
 end
+
+
+
+function Olp:tagForRouting(message)
+
+   if message.timeToLive <= 0 then
+   end
+end
+
+function Olp:tagForProcessing(message)
+
+
+end
+
 
 return Olp
