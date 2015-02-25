@@ -11,6 +11,7 @@ function Packet:new(o)
    o.length = o.length or 0
    o.sequenceNumber = o.sequence or 0
    setmetatable(o, self)
+   self.__index = self
    return o
 end
 
@@ -22,6 +23,7 @@ end
 function Message:new(o)
    o = o or {}
    setmetatable(o, self)
+   self.__index = self
    return o
 end
 
