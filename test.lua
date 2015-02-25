@@ -84,4 +84,34 @@ function TestOlsrPackageParsing:testInvalidPacketSize()
                to_short_package)
 end
 
+TestTupleStore = {}
+function TestTupleStore:testStoreAndLookup()
+   local tupleStore = require('tupleStore')
+   local store = tupleStore:new({'keyA', 'keyB', 'keyC'})
+
+   store:set({'a', 'b', 'c'}, 11)
+   assertEquals(store:lookup({'a', 'b', 'c'}), 11)
+end
+
+function TestTupleStore:testParameterValidation()
+   local tupleStore = require('tupleStore')
+   local store = tupleStore:new({'keyA', 'keyB', 'keyC'})
+
+   assertError("Wrong amount of keys provided",
+               store.set, store,
+               {'a', 'b'}, 11)
+
+   assertError("Wrong amount of keys provided",
+               store.set, store,
+               {'a', 'b', 'c', 'd'}, 11)
+
+   assertError("Wrong amount of keys provided",
+               store.lookup, store,
+               {'a', 'b'})
+
+   assertError("Wrong amount of keys provided",
+               store.lookup, store,
+               {'a', 'b', 'c', 'd'})
+end
+
 LuaUnit:run()
